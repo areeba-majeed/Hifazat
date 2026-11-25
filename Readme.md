@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔐 SecureDocs
+# 🔐 Hifazat
 
 ### Secure Document Management System
 
