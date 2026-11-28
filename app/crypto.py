@@ -1,5 +1,6 @@
 """All cryptography goes through the pyca `cryptography` library and
-`argon2-cffi`. Nothing here implements a primitive by hand.
+`argon2-cffi`. 
+Scheme (envelope encryption):
   * Every document version gets a fresh random 256-bit DEK.
   * Content is encrypted with AES-256-GCM(DEK). AAD binds the ciphertext
     to its document id + version, so blobs cannot be swapped between docs.
@@ -29,7 +30,8 @@ NONCE_LEN = 12  # 96-bit nonce, as recommended for GCM
 
 
 class IntegrityError(Exception):
-    """Cryptographic integrity check failed (HMAC, signature, or GCM tag)."""
+    """Ciphertext, wrapped key, hash or signature failed verification."""
+
 #keys
 
 def _write_secret(path: Path, data: bytes) -> None:
@@ -68,7 +70,6 @@ def _load_or_create_ed25519(path: Path) -> Ed25519PrivateKey:
 
 class KeyRing:
     """Holds the three independent server secrets.
-
     master.key  - KEK that wraps per-document DEKs (confidentiality)
     signing_key - Ed25519 key that signs document digests (integrity)
     audit.key   - HMAC key for the audit chain (log integrity)
@@ -82,7 +83,6 @@ class KeyRing:
         self.audit_key = _load_or_create_raw(key_dir / "audit.key")
         self.signing_key = _load_or_create_ed25519(key_dir / "signing_key.pem")
         self.verify_key: Ed25519PublicKey = self.signing_key.public_key()
-
 
 # documents
 

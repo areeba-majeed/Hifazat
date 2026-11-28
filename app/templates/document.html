@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% from "_ui.html" import icon, toast, ext %}
+{% block title %}{{ doc.title }} · Hifazat{% endblock %}
+{% block toasts %}
+  {% if reports %}
+    {% if intact %}{{ toast('ok', 'Integrity verified.') }}
+    {% else %}{{ toast('err', 'Tampering detected.', true) }}{% endif %}
+  {% endif %}
+  {% if new_link %}{{ toast('ok', 'Link created. Copy it now.') }}{% endif %}
+{% endblock %}
+{% block content %}
+{# Buttons are shown per role for convenience only. Every action is re-checked on the server. #}
+<section class="card doc-head">
+  <div class="doc-title">
+    <span class="file-badge lg">{{ ext(doc.original_filename) }}</span>
+    <div>
+      <h1>{{ doc.title }}</h1>
+      <p class="muted">{{ doc.original_filename }} &middot; <span class="tag {{ 'brand' if role != 'viewer' else '' }}">{{ role }}</span></p>
+    </div>
+  </div>
+  <div class="row actions-row">
+    <a class="button" href="/documents/{{ doc.id }}/download">{{ icon('download', 16) }} Download</a>
+    <a class="button secondary" href="/documents/{{ doc.id }}/verify">{{ icon('shield-check', 16) }} Verify integrity</a>
+    {% if role == "owner" %}
+    <form method="post" action="/documents/{{ doc.id }}/delete" class="inline" data-confirm="Delete this document and all its versions? This cannot be undone.">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <button class="danger">{{ icon('trash', 16) }} Delete document</button>
+    </form>
+    {% endif %}
+  </div>
+  <dl class="meta">
+    <dt>File</dt><dd>{{ doc.original_filename }}</dd>
+    <dt>Owner</dt><dd>{{ doc.owner.username }}</dd>
+    <dt>Your role</dt><dd><span class="tag">{{ role }}</span></dd>
+    <dt>Current version</dt><dd>v{{ doc.current_version }} &middot; updated {{ doc.updated_at|dt }}</dd>
+    <dt>Document ID</dt><dd><code>{{ doc.id }}</code></dd>
+  </dl>
+</section>
+
+{% if reports %}
+<section class="card {{ 'good' if intact else 'bad' }}">
+  <h2>{{ icon('shield-check' if intact else 'alert', 18) }} Integrity check: {{ "INTACT" if intact else "TAMPERING DETECTED" }}</h2>
+  {% for r in reports %}
+  <h3>Version {{ r.version }} — <span class="tag {{ 'good' if r.ok else 'bad' }}">{{ "OK" if r.ok else "FAILED" }}</span></h3>
+  <ul class="checks">
+    {% for c in r.checks %}
+    <li class="{{ 'pass' if c.ok else ('skip' if c.ok is none else 'fail') }}">
+      {{ "✔" if c.ok else ("–" if c.ok is none else "✘") }} {{ c.name }}{% if c.note and not c.ok %} <span class="muted">({{ c.note }})</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>{{ icon('layers', 18) }} Versions</h2>
+  <table>
+    <thead><tr><th>Version</th><th>Size</th><th>Uploaded by</th><th>Date</th><th>SHA-256 (plaintext)</th></tr></thead>
+    <tbody>
+    {% for v in doc.versions|reverse %}
+      <tr><td><span class="tag brand">v{{ v.version }}</span></td><td>{{ v.size|size }}</td><td>{{ v.uploader.username }}</td>
+          <td>{{ v.created_at|dt }}</td><td><code class="hash">{{ v.sha256 }}</code></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if role in ("owner", "editor") %}
+  <form method="post" action="/documents/{{ doc.id }}/versions" enctype="multipart/form-data" class="row version-form" data-busy="Encrypting…">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <label class="dropzone compact">
+      <input type="file" name="file" required>
+      <span class="dz-icon">{{ icon('upload', 20) }}</span>
+      <span class="dz-text"><b class="dz-name">Choose the new version file</b></span>
+    </label>
+    <button>{{ icon('upload', 16) }} Upload new version</button>
+  </form>
+  {% endif %}
+</section>
+
+{% if role == "owner" %}
+<section class="card">
+  <h2>{{ icon('users', 18) }} Who has access</h2>
+  {% if perms %}
+  <table>
+    <thead><tr><th>User</th><th>Role</th><th>Granted</th><th>Expires</th><th></th></tr></thead>
+    <tbody>
+    {% for p in perms %}
+      <tr><td><span class="avatar sm">{{ p.user.username[0]|upper }}</span> {{ p.user.username }}</td><td><span class="tag {{ 'brand' if p.role == 'editor' else '' }}">{{ p.role }}</span></td><td>{{ p.granted_at|dt }}</td>
+          <td>{{ p.expires_at|dt }}{% if p.expires_at and p.expires_at <= now %} <span class="tag bad">expired</span>{% endif %}</td>
+          <td><form method="post" action="/documents/{{ doc.id }}/permissions/{{ p.id }}/revoke" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="danger small">Revoke</button></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Only you can access this document.</p>{% endif %}
+
+  <h3>Share with a user</h3>
+  <form method="post" action="/documents/{{ doc.id }}/share" class="row">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <input name="username" placeholder="Username" required maxlength="64">
+    <select name="role"><option value="viewer">Viewer (read only)</option><option value="editor">Editor (read + new versions)</option></select>
+    <label class="inline-label">Expires in <input type="number" name="expires_days" value="0" min="0" max="365" class="num"> days (0 = never)</label>
+    <button>{{ icon('user-plus', 16) }} Grant access</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>{{ icon('link', 18) }} Temporary download links</h2>
+  {% if new_link %}
+  <div class="msg ok newlink">
+    <strong>Copy this link now — it is shown only once:</strong><br>
+    <code class="hash" id="share-url">{{ new_link }}</code>
+    <div class="row"><button type="button" class="small secondary" data-copy-target="share-url">{{ icon('copy', 14) }} Copy link</button></div>
+    <span class="small">Anyone holding this link can download the file until it expires, is used up, or you revoke it.</span>
+  </div>
+  {% endif %}
+  {% if links %}
+  <table>
+    <thead><tr><th>#</th><th>Created</th><th>Expires</th><th>Uses</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for l in links %}
+      {% set active = not l.revoked_at and l.expires_at > now and l.use_count < l.max_uses %}
+      <tr><td>{{ l.id }}</td><td>{{ l.created_at|dt }}</td><td>{{ l.expires_at|dt }}</td><td>{{ l.use_count }}/{{ l.max_uses }}</td>
+          <td>{% if l.revoked_at %}<span class="tag bad">revoked</span>{% elif active %}<span class="tag good">active</span>{% else %}<span class="tag">expired</span>{% endif %}</td>
+          <td>{% if active %}<form method="post" action="/documents/{{ doc.id }}/links/{{ l.id }}/revoke" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="danger small">Revoke</button></form>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  <form method="post" action="/documents/{{ doc.id }}/links" class="row">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <label class="inline-label">Valid for <input type="number" name="hours" value="24" min="1" max="72" class="num"> hours</label>
+    <label class="inline-label">Max downloads <input type="number" name="max_uses" value="3" min="1" max="20" class="num"></label>
+    <button>{{ icon('link', 16) }} Create link</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
