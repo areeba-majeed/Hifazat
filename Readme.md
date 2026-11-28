@@ -61,20 +61,6 @@ python -m uvicorn app.main:app --port 8000
 
 Open **http://localhost:8000**. On first start, the app creates `data/` (database and blobs) and `keys/` (secrets).
 
-### 👥 Demo Accounts
-
-Created by `seed_demo`. These are **TEST values, not real secrets**.
-
-| User | Password | Notes |
-|---|---|---|
-| 👑 `admin` | `Copper-Tide-Demo-2026` | Administrator (users + audit log, **no** document access) |
-| 👩 `alice` | `Orchid-Lamp-Demo-2026` | Owns "Q4 Budget" (bob = viewer, carol = editor) and "Salary review notes" |
-| 👨 `bob` | `Granite-Kite-Demo-2026` | Owns "Project plan" (alice = viewer) |
-| 👩‍💼 `carol` | `Velvet-Moss-Demo-2026` | Editor on "Q4 Budget" |
-| 🕵️ `mallory` | `Silent-Fox-Demo-2026` | Has no access to anything, use for attack demos |
-
-- To create a real administrator: `python -m scripts.create_admin`
-- To reset everything: stop the server and delete the `data/` and `keys/` folders.
 
 ### 🧪 Run the Tests
 
