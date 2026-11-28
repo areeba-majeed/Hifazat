@@ -219,16 +219,16 @@ tests/             pytest suite (Part 3 evidence)
 
 ---
 
-## ⚠️ Known Limitations
+## Known Limitations
 
 | Limitation | Details |
 |---|---|
-| 🖥️ **Server-side encryption** | If the server itself is fully compromised (master key plus memory), documents are exposed. E2EE would fix this, but at the cost of harder sharing and key recovery. |
-| 👀 **Exposed metadata** | Titles and filenames are stored in plaintext in the database. |
-| 🗝️ **Key storage** | Keys sit on the same host as files. Production should use a KMS or HSM and separate machines. |
-| 🧵 **Single process** | The audit-chain lock assumes a single server process (run uvicorn with one worker). |
-| 📥 **Downloaded copies** | Revocation cannot recall copies already downloaded. Watermarking or DRM would be needed for that. |
-| 🔓 **No HTTPS in dev** | Deploy behind TLS and set `SDMS_SECURE_COOKIES=1`. |
+| **Server-side encryption** | If the server itself is fully compromised (master key plus memory), documents are exposed. E2EE would fix this, but at the cost of harder sharing and key recovery. |
+| **Exposed metadata** | Titles and filenames are stored in plaintext in the database. |
+| **Key storage** | Keys sit on the same host as files. Production should use a KMS or HSM and separate machines. |
+| **Single process** | The audit-chain lock assumes a single server process (run uvicorn with one worker). |
+| **Downloaded copies** | Revocation cannot recall copies already downloaded. Watermarking or DRM would be needed for that. |
+| **No HTTPS in dev** | Deploy behind TLS and set `SDMS_SECURE_COOKIES=1`. |
 
 ---
 
