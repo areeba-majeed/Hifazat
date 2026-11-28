@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_ui.html" import icon, ext %}
+{% block title %}My documents · Hifazat{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>My documents</h1>
+    <p class="muted"></p>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat"><span class="stat-icon">{{ icon('folder', 20) }}</span><div><b>{{ owned|length }}</b><span>Owned documents</span></div></div>
+  <div class="stat"><span class="stat-icon teal">{{ icon('share', 20) }}</span><div><b>{{ shared|length }}</b><span>Shared with me</span></div></div>
+  <div class="stat"><span class="stat-icon amber">{{ icon('layers', 20) }}</span><div><b>{{ owned|sum(attribute='current_version') }}</b><span>Encrypted versions</span></div></div>
+  <div class="stat"><span class="stat-icon green">{{ icon('lock', 20) }}</span><div><b>AES-256</b><span>GCM encryption</span></div></div>
+</section>
+
+<section class="card">
+  <h2> Upload a document</h2>
+  <form method="post" action="/documents" enctype="multipart/form-data" class="upload-form" data-busy="Encrypting…">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <label class="dropzone">
+      <input type="file" name="file" required>
+      <span class="dz-icon">{{ icon('upload', 26) }}</span>
+      <span class="dz-text"><b class="dz-name">Choose a file or drop it here</b><small>Max 10 MB &middot; encrypted on the server before it is saved</small></span>
+    </label>
+    <div class="upload-side">
+      <input name="title" placeholder="Title (optional)" maxlength="200">
+      <button>{{ icon('lock', 16) }} Encrypt &amp; upload</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <h2> My documents</h2>
+  {% if owned %}
+  <table class="doc-table">
+    <thead><tr><th>Title</th><th>File</th><th>Version</th><th>Updated</th></tr></thead>
+    <tbody>
+    {% for d in owned %}
+      <tr>
+        <td><a class="doc-link" href="/documents/{{ d.id }}"><span class="file-badge">{{ ext(d.original_filename) }}</span><span>{{ d.title }}</span></a></td>
+        <td>{{ d.original_filename }}</td>
+        <td><span class="tag brand">v{{ d.current_version }}</span></td><td>{{ d.updated_at|dt }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty">{{ icon('folder', 28) }}<p>You have not uploaded any documents yet.</p></div>{% endif %}
+</section>
+
+<section class="card">
+  <h2> Shared with me</h2>
+  {% if shared %}
+  <table class="doc-table">
+    <thead><tr><th>Title</th><th>Owner</th><th>My role</th><th>Access expires</th></tr></thead>
+    <tbody>
+    {% for p, d in shared %}
+      <tr>
+        <td><a class="doc-link" href="/documents/{{ d.id }}"><span class="file-badge teal">{{ ext(d.original_filename) }}</span><span>{{ d.title }}</span></a></td>
+        <td>{{ d.owner.username }}</td>
+        <td><span class="tag {{ 'brand' if p.role == 'editor' else '' }}">{{ p.role }}</span></td><td>{{ p.expires_at|dt }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty">{{ icon('share', 28) }}<p>Nothing has been shared with you.</p></div>{% endif %}
+</section>
+{% endblock %}
