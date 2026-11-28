@@ -176,8 +176,8 @@ A forbidden document and a non-existent one return the **identical 404**, so err
 
 | | |
 |---|---|
-| ✅ **Logged** | Logins (success, failure, lockout), uploads, downloads, verifications, grants, revocations, link creation and use, deletions, admin actions, every denied request, and integrity failures. |
-| 🚫 **Never logged** | Passwords, keys, tokens or document contents. |
+| **Logged** | Logins (success, failure, lockout), uploads, downloads, verifications, grants, revocations, link creation and use, deletions, admin actions, every denied request, and integrity failures. |
+| **Never logged** | Passwords, keys, tokens or document contents. |
 
 - **Hash chain:** every record includes the previous record's hash, and the HMAC-SHA256 key is kept separately in `keys/audit.key`. An anchor file outside the database lets the check detect deleted records at the end of the log.
 - **SQLite triggers** block `UPDATE` and `DELETE` on `audit_log`. This is defence in depth; the HMAC chain is the real detection control.
@@ -241,7 +241,5 @@ All cryptographic primitives come from these libraries. **None are implemented b
 ---
 
 <div align="center">
-
-Made for **CS3002 Information Security** 🛡️
-
+ **CS3002 Information Security** 
 </div>
